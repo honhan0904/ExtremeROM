@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [c2s]
+        target: [beyond0lte, beyond1lte, beyond2lte, beyondx, x1s, y2s, z3s, c1s, c2s, r8s, o1s, t2s, p3s, r9s]
 
     steps:
       - name: Checkout repo
@@ -85,6 +85,18 @@ jobs:
         run: |
           source ./buildenv.sh ${{ matrix.target }}
           ./scripts/make_rom.sh --force
+          echo "Listing files in out directory after build:"
+          ls -l out/
+
+      - name: Find ZIP file
+        id: find_zip
+        run: |
+          ZIP_FILE=$(find out -maxdepth 1 -type f -name "*.zip" | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "Error: No ZIP file found in out directory!"
+            exit 1
+          fi
+          echo "zip_file=$ZIP_FILE" >> $GITHUB_OUTPUT
 
       - name: Create Release
         id: create_release
@@ -103,6 +115,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: $(find out -maxdepth 1 -type f -name "*.zip" | head -n 1)
+          asset_path: ${{ steps.find_zip.outputs.zip_file }}
           asset_name: ExtremeROM-${{ matrix.target }}-${{ github.run_id }}.zip
           asset_content_type: application/zip
